@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from .models import Book
-from .auth import get_current_user
+from .auth import get_current_admin
 
 router=APIRouter()
 
@@ -8,7 +8,7 @@ Books = []
 
 # Endpoint 1 - Create a Book
 @router.post("/books")
-def create_book(book: Book, current_user: str = Depends(get_current_user)):
+def create_book(book: Book, current_admin = Depends(get_current_admin)):
     for existing_book in Books:
         if book.BookID == existing_book.BookID:
             raise HTTPException(status_code=409, detail="Book ID already exists")
@@ -48,7 +48,7 @@ def specific_book(book_id: int):
 
 # Endpoint 4 - Update an entire book
 @router.put("/books/{book_id}")
-def update_book(book_id: int, book: Book, current_user: str = Depends(get_current_user)):
+def update_book(book_id: int, book: Book, current_admin = Depends(get_current_admin)):
     for existing_book in Books:
         if existing_book.BookID == book_id:
             existing_book.BookName = book.BookName
@@ -64,7 +64,7 @@ def update_book(book_id: int, book: Book, current_user: str = Depends(get_curren
 
 # Endpoint 5 - Update only the book name
 @router.patch("/books/{book_id}")
-def name_change(book_id: int, bookname: str, current_user: str = Depends(get_current_user)):
+def name_change(book_id: int, bookname: str, current_admin = Depends(get_current_admin)):
     for existing_book in Books:
         if existing_book.BookID == book_id:
             existing_book.BookName = bookname
@@ -78,7 +78,7 @@ def name_change(book_id: int, bookname: str, current_user: str = Depends(get_cur
 
 # Endpoint 6 - Delete a book
 @router.delete("/books/{book_id}")
-def delete_book(book_id: int, current_user: str = Depends(get_current_user)):
+def delete_book(book_id: int, current_admin = Depends(get_current_admin)):
     for existing_book in Books:
         if existing_book.BookID == book_id:
             Books.remove(existing_book)
