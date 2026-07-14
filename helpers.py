@@ -1,6 +1,9 @@
 from sqlalchemy.orm import Session
 
-from .models import Author, BookAuthor
+try:
+    from .models import Author, BookAuthor
+except ImportError:
+    from models import Author, BookAuthor
 
 
 def link_authors_to_book(

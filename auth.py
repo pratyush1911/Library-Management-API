@@ -1,13 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from jose import jwt, JWTError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from .schemas import LoginRequest
-from .database import get_db
-from .models import User
+try:
+    from .schemas import LoginRequest, SignupRequest
+    from .database import get_db
+    from .models import User
+except ImportError:
+    from schemas import LoginRequest, SignupRequest
+    from database import get_db
+    from models import User
 
 router = APIRouter()
 
@@ -23,6 +28,10 @@ pwd_context = CryptContext(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+
 def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(
         plain_password,
@@ -33,7 +42,7 @@ def verify_password(plain_password: str, hashed_password: str):
 def create_access_token(data: dict):
     to_encode = data.copy()
 
-    expire = datetime.utcnow() + timedelta(
+    expire = datetime.now(UTC) + timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES
     )
 
@@ -49,7 +58,6 @@ def create_access_token(data: dict):
 
 
 def verify_token(token: str):
-
     try:
         payload = jwt.decode(
             token,
@@ -61,7 +69,7 @@ def verify_token(token: str):
         role = payload.get("role")
 
         if username is None:
-            return { "Message": " Error 401  Invalid or expr token"   }
+            raise JWTError("Missing subject")
 
         return {
             "username": username,
@@ -69,7 +77,7 @@ def verify_token(token: str):
         }
 
     except JWTError:
-          return { "Message": " Error 401  Invalid or expired token"   }
+        return {"Message": "Error 401 Invalid or expired token"}
 
 
 def get_current_user(
@@ -78,6 +86,9 @@ def get_current_user(
 ):
     token_data = verify_token(token)
 
+    if "username" not in token_data:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
     user = (
         db.query(User)
         .filter(User.username == token_data["username"])
@@ -85,7 +96,7 @@ def get_current_user(
     )
 
     if user is None:
-          return { "Message": " Error 401 User not found."   }
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
     return user
 
@@ -96,7 +107,35 @@ def get_current_admin(
     if current_user.role == "admin":
         return current_user
 
-    return { "Message": " Error 403  Admin access required."   }
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+
+@router.post("/signup")
+def signup(
+    payload: SignupRequest,
+    db: Session = Depends(get_db)
+):
+    existing_user = db.query(User).filter(User.username == payload.username).first()
+    if existing_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists")
+
+    new_user = User(
+        username=payload.username,
+        hashed_password=hash_password(payload.password),
+        role="user"
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return {
+        "message": "User created successfully",
+        "user": {
+            "username": new_user.username,
+            "role": new_user.role
+        }
+    }
 
 
 @router.post("/login")
@@ -110,13 +149,13 @@ def login(
     ).first()
 
     if user is None:
-          return { "Message": " Error 401  Invalid username or password. "   }
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
 
     if not verify_password(
         credentials.password,
         user.hashed_password
     ):
-        return { "Message": " Error 401  Invalid username or password."   }
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
 
     token = create_access_token(
         {

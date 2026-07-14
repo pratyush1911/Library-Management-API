@@ -1,5 +1,9 @@
 from sqlalchemy import Column, Integer, Text, ForeignKey, TIMESTAMP
-from .database import Base
+
+try:
+    from .database import Base
+except ImportError:
+    from database import Base
 
 class Author(Base):
     __tablename__ = "authors"

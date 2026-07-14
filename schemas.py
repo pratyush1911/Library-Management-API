@@ -6,6 +6,11 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class SignupRequest(BaseModel):
+    username: str
+    password: str
+
+
 class BookCreate(BaseModel):
     BookName: str
     Authors: list[str]

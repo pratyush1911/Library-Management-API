@@ -3,10 +3,16 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .database import get_db
-from .auth import get_current_user
-from .models import Review, Book, User
-from .schemas import ReviewCreate, ReviewUpdate
+try:
+    from .database import get_db
+    from .auth import get_current_user
+    from .models import Review, Book, User
+    from .schemas import ReviewCreate, ReviewUpdate
+except ImportError:
+    from database import get_db
+    from auth import get_current_user
+    from models import Review, Book, User
+    from schemas import ReviewCreate, ReviewUpdate
 
 router = APIRouter(
     prefix="/reviews",

@@ -1,10 +1,16 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from .database import get_db
-from .auth import get_current_admin
-from .models import Author, BookAuthor, Book
-from.schemas import AuthorCreate, AuthorUpdate
+try:
+    from .database import get_db
+    from .auth import get_current_admin
+    from .models import Author, BookAuthor, Book
+    from .schemas import AuthorCreate, AuthorUpdate
+except ImportError:
+    from database import get_db
+    from auth import get_current_admin
+    from models import Author, BookAuthor, Book
+    from schemas import AuthorCreate, AuthorUpdate
 
 router = APIRouter(
     prefix="/authors",

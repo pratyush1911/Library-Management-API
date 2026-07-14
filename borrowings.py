@@ -3,9 +3,14 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .database import get_db
-from .auth import get_current_user, get_current_admin
-from .models import Borrowing, Book, User
+try:
+    from .database import get_db
+    from .auth import get_current_user, get_current_admin
+    from .models import Borrowing, Book, User
+except ImportError:
+    from database import get_db
+    from auth import get_current_user, get_current_admin
+    from models import Borrowing, Book, User
 
 router = APIRouter(prefix="/borrowings", tags=["Borrowings"])
 
