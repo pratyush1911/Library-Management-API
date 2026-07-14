@@ -339,17 +339,9 @@ http://127.0.0.1:8000/docs
 
 to explore and test every endpoint directly from your browser.
 
-After capturing a screenshot, place it inside:
+### Swagger UI Preview
 
-```text
-images/swagger.png
-```
-
-Then add:
-
-```markdown
 ![Swagger UI](images/swagger.png)
-```
 
 ---
 
